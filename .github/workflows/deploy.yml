@@ -64,7 +64,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
             sudo yum update -y
-            sudo yum install -y mysql
+            sudo yum install -y mariadb105
             echo "MySQL client installed."
             mysql -h ${{ secrets.RDS_HOST }} \
                   -u ${{ secrets.RDS_USER }} \
