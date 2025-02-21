@@ -18,7 +18,7 @@ jobs:
       - name: Checkout source-repo
         uses: actions/checkout@v3
         with:
-          repository: github.com/knakatasf/DevOps-MidTerm
+          repository: knakatasf/crud-react-node-mySQL-go
           token: ${{ secrets.ACCESS_TOKEN }}
           path: source-repo
 
