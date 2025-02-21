@@ -60,6 +60,10 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/my-key.pem
           chmod 600 ~/.ssh/my-key.pem
 
+      - name: Copy source-repo to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem -r source-repo ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/source-repo
+
       - name: Initialize Database on RDS
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
@@ -70,7 +74,7 @@ jobs:
                   -u ${{ secrets.RDS_USER }} \
                   -p${{ secrets.RDS_PASSWORD }} \
                   -P ${{ secrets.RDS_PORT }} \
-                  ${{ secrets.RDS_NAME }} < ~/crud-react-node-mySQL-go/database/init.sql
+                  ${{ secrets.RDS_NAME }} < ~/source-repo/database/init.sql
 
             echo "Database initialized successfully."
           EOF
@@ -89,5 +93,5 @@ jobs:
             export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             export RDS_NAME=${{ secrets.RDS_NAME }}
             export RDS_PORT=${{ secrets.RDS_PORT }}
-            docker-compose -f docker-compose.prod.yml up --build -d
+            docker compose -f docker-compose.prod.yml up --build -d
           EOF
