@@ -64,21 +64,6 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem -r source-repo ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/source-repo
 
-      - name: Initialize Database on RDS
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
-            sudo yum update -y
-            sudo yum install -y mariadb105
-            echo "MySQL client installed."
-            mysql -h ${{ secrets.RDS_HOST }} \
-                  -u ${{ secrets.RDS_USER }} \
-                  -p${{ secrets.RDS_PASSWORD }} \
-                  -P ${{ secrets.RDS_PORT }} \
-                  ${{ secrets.RDS_NAME }} < ~/source-repo/database/init.sql
-
-            echo "Database initialized successfully."
-          EOF
-
       - name: Install Docker and Run Smoke Tests
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
@@ -93,5 +78,20 @@ jobs:
             export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             export RDS_NAME=${{ secrets.RDS_NAME }}
             export RDS_PORT=${{ secrets.RDS_PORT }}
-            docker compose -f docker-compose.prod.yml up --build -d
+            docker compose --file docker-compose.prod.yml up --build -d
+          EOF
+
+      - name: Initialize Database on RDS
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+            sudo yum update -y
+            sudo yum install -y mariadb105
+            echo "MySQL client installed."
+            mysql -h ${{ secrets.RDS_HOST }} \
+                  -u ${{ secrets.RDS_USER }} \
+                  -p${{ secrets.RDS_PASSWORD }} \
+                  -P ${{ secrets.RDS_PORT }} \
+                  ${{ secrets.RDS_NAME }} < ~/source-repo/database/init.sql
+
+            echo "Database initialized successfully."
           EOF
