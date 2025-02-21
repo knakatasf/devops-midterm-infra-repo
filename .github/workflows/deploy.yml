@@ -68,17 +68,18 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
             sudo yum update -y
-            sudo yum install -y docker
+            sudo yum install -y docker docker-compose
             sudo systemctl start docker
             sudo systemctl enable docker
             echo "Docker installed successfully!"
             docker --version
+            docker-compose --version
             export RDS_HOST=${{ secrets.RDS_HOST }}
             export RDS_USER=${{ secrets.RDS_USER }}
             export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             export RDS_NAME=${{ secrets.RDS_NAME }}
             export RDS_PORT=${{ secrets.RDS_PORT }}
-            docker compose --file docker-compose.prod.yml up --build -d
+            docker-compose -f docker-compose.prod.yml up --build -d
           EOF
 
       - name: Initialize Database on RDS
