@@ -45,7 +45,7 @@ jobs:
           --capabilities CAPABILITY_NAMED_IAM
 
       - name: Wait for EC2 instance to be ready
-        run: sleep 90
+        run: sleep 30
 
       - name: Get EC2 public IP
         id: get-ip
@@ -66,12 +66,11 @@ jobs:
             sudo yum update -y
             sudo yum install -y mysql
             echo "MySQL client installed."
-
             mysql -h ${{ secrets.RDS_HOST }} \
                   -u ${{ secrets.RDS_USER }} \
                   -p${{ secrets.RDS_PASSWORD }} \
                   -P ${{ secrets.RDS_PORT }} \
-                  ${{ secrets.RDS_NAME }} < ~/source-repo/database/init.sql
+                  ${{ secrets.RDS_NAME }} < ~/crud-react-node-mySQL-go/database/init.sql
 
             echo "Database initialized successfully."
           EOF
