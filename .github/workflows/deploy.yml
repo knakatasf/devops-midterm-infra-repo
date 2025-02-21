@@ -30,6 +30,13 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
+      - name: Delete previous EC2 stack, if exists
+        continue-on-error: true
+        run: |
+          aws cloudformation delete-stack --stack-name temp-ec2-stack
+          echo "Waiting for stack deletion..."
+          aws cloudformation wait stack-delete-complete --stack-name temp-ec2-stack
+
       - name: Deploy EC2 instance
         run: |
           aws cloudformation deploy \
@@ -38,7 +45,7 @@ jobs:
           --capabilities CAPABILITY_NAMED_IAM
 
       - name: Wait for EC2 instance to be ready
-        run: sleep 60
+        run: sleep 90
 
       - name: Get EC2 public IP
         id: get-ip
