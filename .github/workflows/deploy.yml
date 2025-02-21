@@ -1,0 +1,65 @@
+name: Nightly Deployment
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout infra-repo
+        uses: actions/checkout@v3
+
+      - name: Checkout source-repo
+        uses: actions/checkout@v3
+        with:
+          repository: github.com/knakatasf/DevOps-MidTerm
+          token: ${{ secrets.ACCESS_TOKEN }}
+          path: source-repo
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Deploy EC2 instance
+        run: |
+          aws cloudformation deploy \
+          --template-file cloudformation/ec2-instance.yml \
+          --stack-name temp-ec2-stack \
+          --capabilities CAPABILITY_NAMED_IAM
+
+      - name: Wait for EC2 instance to be ready
+        run: sleep 30
+
+      - name: Get EC2 public IP
+        id: get-ip
+        run: |
+          PUBLIC_IP=$(aws cloudformation describe-stacks --stack-name temp-ec2-stack \
+            --query "Stacks[0].Outputs[?OutputKey=='PublicIp'].OutputValue" --output text)
+          echo "PUBLIC_IP=${PUBLIC_IP}" >> $GITHUB_ENV
+
+      - name: Add SSH private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/my-key.pem
+          chmod 600 ~/.ssh/my-key.pem
+
+      - name: Install Docker and Run Smoke Tests
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+            sudo yum update -y
+            sudo yum install -y docker
+            sudo systemctl start docker
+            sudo systemctl enable docker
+            echo "Docker installed successfully!"
+            docker --version
+          EOF
