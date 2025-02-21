@@ -37,7 +37,7 @@ jobs:
           echo "Waiting for stack deletion..."
           aws cloudformation wait stack-delete-complete --stack-name temp-ec2-stack
 
-      - name: Deploy EC2 instance
+      - name: Launch an EC2 instance
         run: |
           aws cloudformation deploy \
           --template-file cloudformation/ec2-instance.yml \
@@ -60,6 +60,22 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/my-key.pem
           chmod 600 ~/.ssh/my-key.pem
 
+      - name: Initialize Database on RDS
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+            sudo yum update -y
+            sudo yum install -y mysql
+            echo "MySQL client installed."
+
+            mysql -h ${{ secrets.RDS_HOST }} \
+                  -u ${{ secrets.RDS_USER }} \
+                  -p${{ secrets.RDS_PASSWORD }} \
+                  -P ${{ secrets.RDS_PORT }} \
+                  ${{ secrets.RDS_NAME }} < ~/source-repo/database/init.sql
+
+            echo "Database initialized successfully."
+          EOF
+
       - name: Install Docker and Run Smoke Tests
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
@@ -69,4 +85,10 @@ jobs:
             sudo systemctl enable docker
             echo "Docker installed successfully!"
             docker --version
+            export RDS_HOST=${{ secrets.RDS_HOST }}
+            export RDS_USER=${{ secrets.RDS_USER }}
+            export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
+            export RDS_NAME=${{ secrets.RDS_NAME }}
+            export RDS_PORT=${{ secrets.RDS_PORT }}
+            docker-compose -f docker-compose.prod.yml up --build -d
           EOF
