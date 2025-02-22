@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: Checkout infra-repo
         uses: actions/checkout@v3
+        with:
+          repository: knakatasf/devops-midterm-infra-repo
+          token: ${{ secrets.ACCESS_TOKEN }}
+          path: infra-repo
 
       - name: Checkout source-repo
         uses: actions/checkout@v3
