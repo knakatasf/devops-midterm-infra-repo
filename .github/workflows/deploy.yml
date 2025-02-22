@@ -44,7 +44,7 @@ jobs:
       - name: Launch an EC2 instance
         run: |
           aws cloudformation deploy \
-          --template-file cloudformation/ec2-instance.yml \
+          --template-file infra-repo/cloudformation/ec2-instance.yml \
           --stack-name temp-ec2-stack \
           --capabilities CAPABILITY_NAMED_IAM
 
