@@ -63,6 +63,7 @@ jobs:
       - name: Copy source-repo to EC2
         run: |
           scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem -r source-repo ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/source-repo
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem -r infra-repo ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/infra-repo
 
       - name: Install Docker and Run Smoke Tests
         run: |
@@ -80,6 +81,7 @@ jobs:
             export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             export RDS_NAME=${{ secrets.RDS_NAME }}
             export RDS_PORT=${{ secrets.RDS_PORT }}
+            cd /home/ec2-user/infra-repo
             docker-compose -f docker-compose.prod.yml up --build -d
           EOF
 

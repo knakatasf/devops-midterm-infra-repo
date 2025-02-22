@@ -3,7 +3,7 @@ version: "3"
 services:
   backend:
     build:
-      context: ./backend
+      context: ../source-repo/backend
     ports:
       - "8800:8800"
     environment:
@@ -17,7 +17,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ../source-repo/frontend
     ports:
       - "80:80"
     depends_on:
