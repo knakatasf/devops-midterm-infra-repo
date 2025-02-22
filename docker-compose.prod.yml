@@ -12,8 +12,6 @@ services:
       DATABASE_PASSWORD: ${RDS_PASSWORD}
       DATABASE_NAME: ${RDS_NAME}
       DATABASE_PORT: ${RDS_PORT}
-    depends_on:
-      - frontend
 
   frontend:
     build:
