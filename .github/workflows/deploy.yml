@@ -95,6 +95,14 @@ jobs:
             sudo yum update -y
             sudo yum install -y mariadb105
             echo "MySQL client installed."
+          
+            mysql -h ${{ secrets.RDS_HOST }} \
+            -u ${{ secrets.RDS_USER }} \
+            -p${{ secrets.RDS_PASSWORD }} \
+            -P ${{ secrets.RDS_PORT }} \
+            -e "CREATE DATABASE IF NOT EXISTS ${{ secrets.RDS_NAME }};"
+
+            echo "Database created."
             mysql -h ${{ secrets.RDS_HOST }} \
                   -u ${{ secrets.RDS_USER }} \
                   -p${{ secrets.RDS_PASSWORD }} \
