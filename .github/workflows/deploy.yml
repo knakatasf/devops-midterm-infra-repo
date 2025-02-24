@@ -69,7 +69,7 @@ jobs:
           scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem -r source-repo ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/source-repo
           scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem -r infra-repo ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/infra-repo
 
-      - name: Install Docker and setup environment variables
+      - name: Install Docker, setup environment variables, build an image, instantiate containers, and run containers
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
             sudo yum update -y
@@ -139,15 +139,17 @@ jobs:
       - name: Build and push Docker image to ECR
         if: success()
         run: |
-          echo "Logging in to AWS ECR.."
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
-
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
-            cd /home/ec2-user/source-repo
-            echo "Building Docker image.."
-            docker build -t midterm-app .
+            echo "Logging in to AWS ECR.."
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
+
             echo "Tagging image.."
-            docker tag midterm-app:latest ${{ secrets.AWS_ECR_URL }}/midterm-app:latest
-            echo "Pushing image to ECR.."
-            docker push ${{ secrets.AWS_ECR_URL }}/midterm-app:latest
+            docker tag backend:latest ${{ secrets.ECR_REPO_URI }}:backend-latest
+            docker tag frontend:latest ${{ secrets.ECR_REPO_URI }}:frontend-latest
+          
+            echo "Pushing the images to ECR.."
+            docker push ${{ secrets.ECR_REPO_URI }}:backend-latest
+            docker push ${{ secrets.ECR_REPO_URI }}:frontend-latest
+            
+            echo "Docker images pushed to ECR successfully!"
           EOF
