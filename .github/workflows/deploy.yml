@@ -144,12 +144,12 @@ jobs:
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
 
             echo "Tagging image.."
-            docker tag infra-repo-backend:latest ${{ secrets.ECR_REPO_URI }}:backend-latest
-            docker tag infra-repo-frontend:latest ${{ secrets.ECR_REPO_URI }}:frontend-latest
+            docker tag infra-repo-backend:latest ${{ secrets.AWS_ECR_REPO }}:backend-latest
+            docker tag infra-repo-frontend:latest ${{ secrets.AWS_ECR_REPO }}:frontend-latest
           
             echo "Pushing the images to ECR.."
-            docker push ${{ secrets.ECR_REPO_URI }}:backend-latest
-            docker push ${{ secrets.ECR_REPO_URI }}:frontend-latest
+            docker push ${{ secrets.AWS_ECR_REPO }}:backend-latest
+            docker push ${{ secrets.AWS_ECR_REPO }}:frontend-latest
             
             echo "Docker images pushed to ECR successfully!"
           EOF
