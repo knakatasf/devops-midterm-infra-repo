@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   frontend:
-    image: ${{ secrets.AWS_ECR_REPO }}:frontend-latest
+    image: ${AWS_ECR_REPO}:frontend-latest
     container_name: frontend
     restart: always
     depends_on:
@@ -11,7 +11,7 @@ services:
       - app-network
 
   backend:
-    image: ${{ secrets.AWS_ECR_REPO }}:backend-latest
+    image: ${AWS_ECR_REPO}:backend-latest
     container_name: backend
     restart: always
     environment:
