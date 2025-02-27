@@ -2,6 +2,7 @@ version: "3"
 
 services:
   backend:
+    container_name: backend
     build:
       context: ../source-repo/backend
     ports:
@@ -16,6 +17,7 @@ services:
       - app-network
 
   frontend:
+    container_name: frontend
     build:
       context: ../source-repo/frontend
       dockerfile: Dockerfile.prod
