@@ -18,7 +18,8 @@ services:
   frontend:
     build:
       context: ../source-repo/frontend
-      dockerfile: Dockerfile.prod
+    ports:
+      - "5173:5173"
     depends_on:
       - backend
     networks:
