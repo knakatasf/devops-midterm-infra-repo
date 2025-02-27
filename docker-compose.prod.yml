@@ -19,8 +19,6 @@ services:
     build:
       context: ../source-repo/frontend
       dockerfile: Dockerfile.prod
-    ports:
-      - "80:80"
     depends_on:
       - backend
     networks:

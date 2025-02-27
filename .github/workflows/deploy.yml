@@ -22,7 +22,7 @@ jobs:
       - name: Checkout source-repo
         uses: actions/checkout@v3
         with:
-          repository: knakatasf/crud-react-node-mySQL-go
+          repository: knakatasf/devops-midterm-source-repo
           token: ${{ secrets.ACCESS_TOKEN }}
           path: source-repo
 
@@ -48,8 +48,8 @@ jobs:
           --stack-name temp-ec2-stack \
           --capabilities CAPABILITY_NAMED_IAM
 
-      - name: Wait for EC2 instance to be ready
-        run: sleep 30
+#      - name: Wait for EC2 instance to be ready
+#        run: sleep 30
 
       - name: Get EC2 public IP
         id: get-ip
