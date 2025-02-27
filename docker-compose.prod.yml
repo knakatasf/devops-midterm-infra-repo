@@ -22,9 +22,9 @@ services:
       context: ../source-repo/frontend
       dockerfile: Dockerfile.prod
       args:
-        - VITE_BOOK_API_BASE_URL=http://backend:8800
+        - VITE_BOOK_API_BASE_URL=http://claudio.works/api
     environment:
-      VITE_BOOK_APP_API_BASE_URL: "http://backend:8800"
+      VITE_BOOK_APP_API_BASE_URL: "http://claudio.works/api"
     volumes:
       - frontend_dist:/usr/share/nginx/html
     depends_on:
