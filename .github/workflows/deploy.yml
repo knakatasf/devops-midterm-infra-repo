@@ -187,8 +187,8 @@ jobs:
             docker pull ${{ secrets.AWS_ECR_URL }}/$ECR_REPOSITORY:backend-latest
             docker pull ${{ secrets.AWS_ECR_URL }}/$ECR_REPOSITORY:frontend-latest
 
-            docker stop frontend backend nginx || true
-            docker rm frontend backend nginx || true
+#            docker stop frontend backend nginx || true
+#            docker rm frontend backend nginx || true
           
             if [ ! -d "/home/ec2-user/infra-repo" ]; then
               git clone https://github.com/knakatasf/devops-midterm-infra-repo.git /home/ec2-user/infra-repo
