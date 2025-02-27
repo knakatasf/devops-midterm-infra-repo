@@ -31,7 +31,6 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ../source-repo/frontend/dist:/usr/share/nginx/html
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - frontend
