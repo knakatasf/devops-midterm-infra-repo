@@ -49,7 +49,7 @@ jobs:
           --capabilities CAPABILITY_NAMED_IAM
 
       - name: Wait for EC2 instance to be ready
-        run: sleep 20
+        run: sleep 30
 
       - name: Get EC2 public IP
         id: get-ip
