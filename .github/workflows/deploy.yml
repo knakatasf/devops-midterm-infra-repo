@@ -166,10 +166,13 @@ jobs:
             sudo yum install -y docker
             sudo service docker start
             sudo usermod -a -G docker ec2-user
+            newgrp docker  # Refresh user group membership
+
             echo "Docker installed successfully!"
             sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
             docker-compose --version
+          
             export RDS_HOST=${{ secrets.RDS_HOST }}
             export RDS_USER=${{ secrets.RDS_USER }}
             export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
@@ -186,6 +189,10 @@ jobs:
 
             docker stop frontend backend nginx || true
             docker rm frontend backend nginx || true
+          
+            if [ ! -d "/home/ec2-user/infra-repo" ]; then
+              git clone https://github.com/knakatasf/devops-midterm-infra-repo.git /home/ec2-user/infra-repo
+            fi
 
             cd /home/ec2-user/infra-repo
             docker-compose -f docker-compose.qa.yml up -d
