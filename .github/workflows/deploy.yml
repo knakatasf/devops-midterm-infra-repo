@@ -86,7 +86,8 @@ jobs:
             export RDS_NAME=${{ secrets.RDS_NAME }}
             export RDS_PORT=${{ secrets.RDS_PORT }}
             cd /home/ec2-user/infra-repo
-            docker-compose -f docker-compose.prod.yml up --build -d
+            docker-compose -f docker-compose.prod.yml build --no-cache
+            docker-compose -f docker-compose.prod.yml up -d
           EOF
 
       - name: Initialize RDS MySQL
