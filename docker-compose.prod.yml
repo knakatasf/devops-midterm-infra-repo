@@ -5,6 +5,7 @@ services:
     container_name: backend
     build:
       context: ../source-repo/backend
+      dockerfile: Dockerfile
     ports:
       - "8800:8800"
     environment:
@@ -13,43 +14,15 @@ services:
       DATABASE_PASSWORD: ${RDS_PASSWORD}
       DATABASE_NAME: ${RDS_NAME}
       DATABASE_PORT: ${RDS_PORT}
-    networks:
-      - app-network
 
   frontend:
     container_name: frontend
     build:
       context: ../source-repo/frontend
-      dockerfile: Dockerfile.prod
-      args:
-        - VITE_BOOK_API_BASE_URL=http://claudio.works/api
+      dockerfile: Dockerfile
     environment:
       VITE_BOOK_APP_API_BASE_URL: "http://claudio.works/api"
-    volumes:
-      - frontend_dist:/usr/share/nginx/html
-    depends_on:
-      - backend
-    networks:
-      - app-network
-
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    restart: always
     ports:
-      - "80:80"
-    volumes:
-      - frontend_dist:/usr/share/nginx/html
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - "5173:5173"
     depends_on:
-      - frontend
       - backend
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
-
-volumes:
-  frontend_dist:
