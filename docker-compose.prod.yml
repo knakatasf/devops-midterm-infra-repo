@@ -19,6 +19,8 @@ services:
     build:
       context: ../source-repo/frontend
       dockerfile: Dockerfile.prod
+    volumes:
+      - frontend_dist:/app/dist
     depends_on:
       - backend
     networks:
