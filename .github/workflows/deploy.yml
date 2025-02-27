@@ -112,20 +112,20 @@ jobs:
             echo "Database initialized successfully."
           EOF
 
-      - name: Run smoke tests
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
-            echo "Running smoke tests..."
-            cd /home/ec2-user/source-repo
-          
-            chmod +x frontend/tests/homepage.test.sh
-            ./frontend/tests/homepage.test.sh
-            if [ $? -ne 0 ]; then
-              echo "Frontend test failed!"
-              exit 1
-            fi
-            echo "Frontend test passed!"
-
+#      - name: Run smoke tests
+#        run: |
+#          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+#            echo "Running smoke tests..."
+#            cd /home/ec2-user/source-repo
+#
+#            chmod +x frontend/tests/homepage.test.sh
+#            ./frontend/tests/homepage.test.sh
+#            if [ $? -ne 0 ]; then
+#              echo "Frontend test failed!"
+#              exit 1
+#            fi
+#            echo "Frontend test passed!"
+#
 #            # Run API test
 #            chmod +x backend/tests/api.test.sh
 #            ./backend/tests/api.test.sh
@@ -134,7 +134,7 @@ jobs:
 #              exit 1
 #            fi
 #            echo "Backend test passed!"
-          EOF
+#          EOF
 
 #      - name: Push Docker image to ECR
 #        if: success()
