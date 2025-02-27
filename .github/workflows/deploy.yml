@@ -184,8 +184,10 @@ jobs:
             export AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
             
-            docker pull ${{ secrets.AWS_ECR_REPO }}:backend-latest
-            docker pull ${{ secrets.AWS_ECR_REPO }}:frontend-latest
+            export AWS_ECR_REPO=${{ secrets.AWS_ECR_REPO }}
+            
+            docker pull $AWS_ECR_REPO:backend-latest
+            docker pull $AWS_ECR_REPO:frontend-latest
           
             docker-compose -f docker-compose.qa.yml up -d
 
