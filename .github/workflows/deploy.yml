@@ -161,7 +161,7 @@ jobs:
 
       - name: Deploy to QA EC2 instance
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ secrets.QA_EC2_IP }} << EOF
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ secrets.QA_EC2_IP }} << 'EOF'
             sudo yum update -y
             sudo yum install -y docker
             sudo service docker start
