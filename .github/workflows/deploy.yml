@@ -174,12 +174,13 @@ jobs:
             # Frontend Smoke Test
             FRONTEND_URL="http://localhost:5173"
             echo "Testing frontend at $FRONTEND_URL"
-            if curl -s --fail $FRONTEND_URL; then
-              echo "✅ Frontend is up!"
+            RESPONSE=$(curl -s $FRONTEND_URL)
+            if echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
+              echo "✅ Homepage loaded successfully!"
             else
-              echo "❌ Frontend test failed!"
-              exit 1
-            fi
+              echo "❌ Homepage did not load correctly!"
+            exit 1
+            fi       
 
             # Backend Smoke Test
             BACKEND_URL="http://localhost:8800/health"
