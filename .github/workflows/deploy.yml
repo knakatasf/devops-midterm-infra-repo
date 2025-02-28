@@ -189,9 +189,9 @@ jobs:
             fi     
 
             # Backend Smoke Test
-            BACKEND_URL="http://localhost:8800/health"
+            BACKEND_URL="http://localhost:8800/"
             echo "Testing backend at $BACKEND_URL"
-            if curl -s --fail $BACKEND_URL; then
+            if curl -s -o /dev/null -I -w "%{http_code}" $BACKEND_URL | grep -q "200"; then
               echo "✅ Backend is up!"
             else
               echo "❌ Backend test failed!"
