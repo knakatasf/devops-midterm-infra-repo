@@ -3,25 +3,23 @@ version: "3"
 services:
   backend:
     container_name: backend
-    build:
-      context: ../source-repo/backend
-      dockerfile: Dockerfile
+#    build:
+#      context: ../source-repo/backend
+#      dockerfile: Dockerfile
+    image: backend-app:latest
     ports:
       - "8800:8800"
-    environment:
-      DATABASE_HOST: ${RDS_HOST}
-      DATABASE_USER: ${RDS_USER}
-      DATABASE_PASSWORD: ${RDS_PASSWORD}
-      DATABASE_NAME: ${RDS_NAME}
-      DATABASE_PORT: ${RDS_PORT}
+    env_file:
+      - /home/ec2-user/.env
 
   frontend:
     container_name: frontend
-    build:
-      context: ../source-repo/frontend
-      dockerfile: Dockerfile
-    environment:
-      VITE_BOOK_API_BASE_URL: ${API_BASE_URL}
+#    build:
+#      context: ../source-repo/frontend
+#      dockerfile: Dockerfile
+    image: frontend-app:latest
+    env_file:
+      - /home/ec2-user/.env
     ports:
       - "5173:5173"
     depends_on:
