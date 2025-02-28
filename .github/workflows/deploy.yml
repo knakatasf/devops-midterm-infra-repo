@@ -33,7 +33,7 @@ jobs:
         run: |
           cd source-repo/backend
           docker build -t backend-app:latest .
-          cd source-repo/frontend
+          cd ../frontend
           docker build -t frontend-app:latest .
 
       - name: (+) Save Docker Images as tar files
