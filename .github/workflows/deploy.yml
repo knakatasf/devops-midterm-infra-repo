@@ -172,15 +172,20 @@ jobs:
             echo "Running smoke tests..."
 
             # Frontend Smoke Test
-            FRONTEND_URL="http://localhost:5173"
-            echo "Testing frontend at $FRONTEND_URL"
-            RESPONSE=$(curl -s $FRONTEND_URL)
-            if echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
-              echo "✅ Homepage loaded successfully!"
-            else
+            for i in {1..10}; do
+              RESPONSE=$(curl -s $FRONTEND_URL)
+              if echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
+                echo "✅ Homepage loaded successfully!"
+                break
+              fi
+              echo "Retrying in 1 second..."
+              sleep 1
+            done
+              
+            if ! echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
               echo "❌ Homepage did not load correctly!"
-            exit 1
-            fi       
+              exit 1
+            fi     
 
             # Backend Smoke Test
             BACKEND_URL="http://localhost:8800/health"
