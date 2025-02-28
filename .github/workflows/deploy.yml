@@ -172,6 +172,7 @@ jobs:
             echo "Running smoke tests..."
 
             # Frontend Smoke Test
+            FRONTEND_URL="http://localhost:5173"
             for i in {1..10}; do
               RESPONSE=$(curl -s $FRONTEND_URL)
               if echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
