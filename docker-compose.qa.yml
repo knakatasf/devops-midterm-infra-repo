@@ -9,7 +9,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_BOOK_APP_API_BASE_URL="https://claudio.works/api"
+      VITE_BOOK_APP_API_BASE_URL: https://claudio.works/api
 
 
   backend:
@@ -18,8 +18,8 @@ services:
     ports:
       - "8800:8800"
     environment:
-      - RDS_HOST=${RDS_HOST}
-      - RDS_USER=${RDS_USER}
-      - RDS_PASSWORD=${RDS_PASSWORD}
-      - RDS_NAME=${RDS_NAME}
-      - RDS_PORT=${RDS_PORT}
+      RDS_HOST: ${RDS_HOST}
+      RDS_USER: ${RDS_USER}
+      RDS_PASSWORD: ${RDS_PASSWORD}
+      RDS_NAME: ${RDS_NAME}
+      RDS_PORT: ${RDS_PORT}
