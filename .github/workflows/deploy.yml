@@ -208,6 +208,7 @@ jobs:
             export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             export RDS_NAME=${{ secrets.RDS_NAME }}
             export RDS_PORT=${{ secrets.RDS_PORT }}
+            export FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           
             echo "Checking for docker-compose.qa.yml..."
             if [ ! -f docker-compose.qa.yml ]; then
