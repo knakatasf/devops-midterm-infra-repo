@@ -12,35 +12,35 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-#      - name: Checkout infra-repo
-#        uses: actions/checkout@v3
-#        with:
-#          repository: knakatasf/devops-midterm-infra-repo
-#          token: ${{ secrets.ACCESS_TOKEN }}
-#          path: infra-repo
-#
-#      - name: Checkout source-repo
-#        uses: actions/checkout@v3
-#        with:
-#          repository: knakatasf/devops-midterm-source-repo
-#          token: ${{ secrets.ACCESS_TOKEN }}
-#          path: source-repo
-#
-#      - name: (+) Set up Docker Buildx
-#        uses: docker/setup-buildx-action@v2
-#
-#      - name: (+) Build frontend and backend images
-#        run: |
-#          cd source-repo/backend
-#          docker build -t backend-app:latest .
-#          cd ../frontend
-#          docker build -t frontend-app:latest .
-#
-#      - name: (+) Save Docker Images as tar files
-#        run: |
-#          docker save -o backend-app.tar backend-app:latest
-#          docker save -o frontend-app.tar frontend-app:latest
-#
+      - name: Checkout infra-repo
+        uses: actions/checkout@v3
+        with:
+          repository: knakatasf/devops-midterm-infra-repo
+          token: ${{ secrets.ACCESS_TOKEN }}
+          path: infra-repo
+
+      - name: Checkout source-repo
+        uses: actions/checkout@v3
+        with:
+          repository: knakatasf/devops-midterm-source-repo
+          token: ${{ secrets.ACCESS_TOKEN }}
+          path: source-repo
+
+      - name: (+) Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: (+) Build frontend and backend images
+        run: |
+          cd source-repo/backend
+          docker build -t backend-app:latest .
+          cd ../frontend
+          docker build -t frontend-app:latest .
+
+      - name: (+) Save Docker Images as tar files
+        run: |
+          docker save -o backend-app.tar backend-app:latest
+          docker save -o frontend-app.tar frontend-app:latest
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -48,30 +48,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
-#
-#      - name: Launch EC2 Instance
-#        run: |
-#          INSTANCE_ID=$(aws ec2 run-instances \
-#            --image-id ${{ secrets.AWS_AMI_ID }} \
-#            --instance-type ${{ secrets.AWS_INSTANCE_TYPE }} \
-#            --key-name ${{ secrets.AWS_KEY_NAME }} \
-#            --security-group-ids ${{ secrets.AWS_SECURITY_GROUP }} \
-#            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestEC2}]' \
-#            --query 'Instances[0].InstanceId' \
-#            --output text)
-#
-#          echo "EC2 Instance Launched: $INSTANCE_ID"
-#          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-#
-#      - name: Get Public IP
-#        run: |
-#          PUBLIC_IP=$(aws ec2 describe-instances \
-#            --instance-ids $INSTANCE_ID \
-#            --query 'Reservations[0].Instances[0].PublicIpAddress' \
-#            --output text)
-#
-#          echo "EC2 Public IP: $PUBLIC_IP"
-#          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
+      - name: Launch EC2 Instance
+        run: |
+          INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id ${{ secrets.AWS_AMI_ID }} \
+            --instance-type ${{ secrets.AWS_INSTANCE_TYPE }} \
+            --key-name ${{ secrets.AWS_KEY_NAME }} \
+            --security-group-ids ${{ secrets.AWS_SECURITY_GROUP }} \
+            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=TestEC2}]' \
+            --query 'Instances[0].InstanceId' \
+            --output text)
+
+          echo "EC2 Instance Launched: $INSTANCE_ID"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+
+      - name: Get Public IP
+        run: |
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+
+          echo "EC2 Public IP: $PUBLIC_IP"
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
       - name: Add SSH private key
         run: |
@@ -79,102 +79,102 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/my-key.pem
           chmod 600 ~/.ssh/my-key.pem
 
-#      - name: (+) Transfer Docker Images and docker-compose.prod.yml to EC2
-#        run: |
-#          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem backend-app.tar ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/
-#          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem frontend-app.tar ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/
-#          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem infra-repo/docker-compose.prod.yml ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/
-#
-#      - name: (+) SSH into EC2 and set up environment variables
-#        run: |
-#          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
-#            echo "RDS_HOST=${{ secrets.RDS_HOST }}" >> /home/ec2-user/.env
-#            echo "RDS_USER=${{ secrets.RDS_USER }}" >> /home/ec2-user/.env
-#            echo "RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}" >> /home/ec2-user/.env
-#            echo "RDS_NAME=${{ secrets.RDS_NAME }}" >> /home/ec2-user/.env
-#            echo "RDS_PORT=${{ secrets.RDS_PORT }}" >> /home/ec2-user/.env
-#            echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> /home/ec2-user/.env
-#          EOF
-#
-#      - name: (+) Install Docker on EC2
-#        run: |
-#          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
-#            sudo yum update -y
-#            sudo yum install -y docker
-#            sudo service docker start
-#            sudo usermod -a -G docker ec2-user
-#            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-#            sudo chmod +x /usr/local/bin/docker-compose
-#            docker-compose --version
-#            echo "Docker installed successfully!"
-#          EOF
-#
-#      - name: (+) Start containers with docker-compose
-#        run: |
-#          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
-#            docker load -i /home/ec2-user/backend-app.tar
-#            docker load -i /home/ec2-user/frontend-app.tar
-#            docker-compose -f /home/ec2-user/docker-compose.prod.yml --env-file /home/ec2-user/.env up -d
-#          EOF
-#
-#      - name: (+) Run smoke tests on EC2
-#        run: |
-#          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
-#            echo "Running smoke tests..."
-#
-#            # Frontend Smoke Test
-#            FRONTEND_URL="http://localhost:5173"
-#            for i in {1..10}; do
-#              RESPONSE=$(curl -s $FRONTEND_URL)
-#              if echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
-#                echo "✅ Homepage loaded successfully!"
-#                break
-#              fi
-#              echo "Retrying in 1 second..."
-#              sleep 1
-#            done
-#
-#            if ! echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
-#              echo "❌ Homepage did not load correctly!"
-#              exit 1
-#            fi
-#
-#            # Backend Smoke Test
-#            BACKEND_URL="http://localhost:8800/"
-#            echo "Testing backend at $BACKEND_URL"
-#            if curl -s -o /dev/null -I -w "%{http_code}" $BACKEND_URL | grep -q "200"; then
-#              echo "✅ Backend is up!"
-#            else
-#              echo "❌ Backend test failed!"
-#              exit 1
-#            fi
-#          EOF
-#
-#      - name: (+) Login to AWS ECR
-#        if: success()
-#        run: |
-#          echo "Logging in to AWS ECR..."
-#          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
-#
-#      - name: (+) Tag and Push Docker images to ECR
-#        if: success()
-#        run: |
-#          echo "Tagging images..."
-#          TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-#
-#          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-$TIMESTAMP
-#          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-latest
-#
-#          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-$TIMESTAMP
-#          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-latest
-#
-#          echo "Pushing images to ECR..."
-#          docker push ${{ secrets.AWS_ECR_REPO }}:backend-$TIMESTAMP
-#          docker push ${{ secrets.AWS_ECR_REPO }}:backend-latest
-#          docker push ${{ secrets.AWS_ECR_REPO }}:frontend-$TIMESTAMP
-#          docker push ${{ secrets.AWS_ECR_REPO }}:frontend-latest
-#
-#          echo "✅ Docker images pushed to ECR successfully!"
+      - name: (+) Transfer Docker Images and docker-compose.prod.yml to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem backend-app.tar ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem frontend-app.tar ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem infra-repo/docker-compose.prod.yml ec2-user@${{ env.PUBLIC_IP }}:/home/ec2-user/
+
+      - name: (+) SSH into EC2 and set up environment variables
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+            echo "RDS_HOST=${{ secrets.RDS_HOST }}" >> /home/ec2-user/.env
+            echo "RDS_USER=${{ secrets.RDS_USER }}" >> /home/ec2-user/.env
+            echo "RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}" >> /home/ec2-user/.env
+            echo "RDS_NAME=${{ secrets.RDS_NAME }}" >> /home/ec2-user/.env
+            echo "RDS_PORT=${{ secrets.RDS_PORT }}" >> /home/ec2-user/.env
+            echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> /home/ec2-user/.env
+          EOF
+
+      - name: (+) Install Docker on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+            sudo yum update -y
+            sudo yum install -y docker
+            sudo service docker start
+            sudo usermod -a -G docker ec2-user
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            docker-compose --version
+            echo "Docker installed successfully!"
+          EOF
+
+      - name: (+) Start containers with docker-compose
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+            docker load -i /home/ec2-user/backend-app.tar
+            docker load -i /home/ec2-user/frontend-app.tar
+            docker-compose -f /home/ec2-user/docker-compose.prod.yml --env-file /home/ec2-user/.env up -d
+          EOF
+
+      - name: (+) Run smoke tests on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ env.PUBLIC_IP }} << 'EOF'
+            echo "Running smoke tests..."
+
+            # Frontend Smoke Test
+            FRONTEND_URL="http://localhost:5173"
+            for i in {1..10}; do
+              RESPONSE=$(curl -s $FRONTEND_URL)
+              if echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
+                echo "✅ Homepage loaded successfully!"
+                break
+              fi
+              echo "Retrying in 1 second..."
+              sleep 1
+            done
+
+            if ! echo "$RESPONSE" | grep -q "<title>Vite + React</title>"; then
+              echo "❌ Homepage did not load correctly!"
+              exit 1
+            fi
+
+            # Backend Smoke Test
+            BACKEND_URL="http://localhost:8800/"
+            echo "Testing backend at $BACKEND_URL"
+            if curl -s -o /dev/null -I -w "%{http_code}" $BACKEND_URL | grep -q "200"; then
+              echo "✅ Backend is up!"
+            else
+              echo "❌ Backend test failed!"
+              exit 1
+            fi
+          EOF
+
+      - name: (+) Login to AWS ECR
+        if: success()
+        run: |
+          echo "Logging in to AWS ECR..."
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
+
+      - name: (+) Tag and Push Docker images to ECR
+        if: success()
+        run: |
+          echo "Tagging images..."
+          TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+
+          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-$TIMESTAMP
+          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-latest
+
+          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-$TIMESTAMP
+          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-latest
+
+          echo "Pushing images to ECR..."
+          docker push ${{ secrets.AWS_ECR_REPO }}:backend-$TIMESTAMP
+          docker push ${{ secrets.AWS_ECR_REPO }}:backend-latest
+          docker push ${{ secrets.AWS_ECR_REPO }}:frontend-$TIMESTAMP
+          docker push ${{ secrets.AWS_ECR_REPO }}:frontend-latest
+
+          echo "✅ Docker images pushed to ECR successfully!"
 
       - name: (+) Deploy to QA EC2 instance
         run: |
