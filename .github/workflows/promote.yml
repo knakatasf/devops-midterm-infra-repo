@@ -85,9 +85,10 @@ jobs:
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 793261838120.dkr.ecr.us-east-1.amazonaws.com
           
             export AWS_ECR_REPO=${{ secrets.AWS_ECR_REPO }}
+            export RC_LABEL=${{ steps.set_rc.outputs.rc_label }}
 
-            docker pull $AWS_ECR_REPO:backend-latest
-            docker pull $AWS_ECR_REPO:frontend-latest
+            docker pull $AWS_ECR_REPO:backend-$RC_LABEL
+            docker pull $AWS_ECR_REPO:frontend-$RC_LABEL
           
             export RDS_HOST=${{ secrets.RDS_HOST }}
             export RDS_USER=${{ secrets.RDS_USER }}
