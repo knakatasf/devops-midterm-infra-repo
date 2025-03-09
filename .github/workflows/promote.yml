@@ -40,17 +40,34 @@ jobs:
         run: |
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
 
-      - name: Promote Latest Images with RC Label
+      - name: List available ECR repositories
         run: |
-          # Get the latest image tags
-          LATEST_FRONTEND=$(aws ecr describe-images --repository-name ${{ secrets.AWS_ECR_REPO }} --query 'imageDetails[?contains(imageTags, `latest-frontend`)]|[0].imageDigest' --output text)
-          LATEST_BACKEND=$(aws ecr describe-images --repository-name ${{ secrets.AWS_ECR_REPO }} --query 'imageDetails[?contains(imageTags, `latest-backend`)]|[0].imageDigest' --output text)
-          
-          # Tag these images with the RC label
-          aws ecr put-image --repository-name ${{ secrets.AWS_ECR_REPO }} --image-tag "frontend-${{ steps.set_rc.outputs.rc_label }}" --image-digest $LATEST_FRONTEND
-          aws ecr put-image --repository-name ${{ secrets.AWS_ECR_REPO }} --image-tag "backend-${{ steps.set_rc.outputs.rc_label }}" --image-digest $LATEST_BACKEND
-          
-          echo "Images promoted to ${{ steps.set_rc.outputs.rc_label }}"
+          echo "Available ECR repositories:"
+          aws ecr describe-repositories --query 'repositories[*].repositoryName' --output table
+
+      - name: Checkout Source Repo at Release Tag
+        uses: actions/checkout@v3
+        with:
+          repository: knakatasf/devops-midterm-source-repo
+          token: ${{ secrets.ACCESS_TOKEN }}
+          path: source-repo
+
+      - name: Build and push with RC Label
+        run: |
+          # Build and tag images with RC label
+          cd source-repo/backend
+          docker build -t backend-app:latest .
+          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-${{ steps.set_rc.outputs.rc_label }}
+
+          cd ../frontend
+          docker build -t frontend-app:latest .
+          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-${{ steps.set_rc.outputs.rc_label }}
+
+          # Push images to ECR
+          docker push ${{ secrets.AWS_ECR_REPO }}:backend-${{ steps.set_rc.outputs.rc_label }}
+          docker push ${{ secrets.AWS_ECR_REPO }}:frontend-${{ steps.set_rc.outputs.rc_label }}
+
+          echo "Images built and pushed with RC label: ${{ steps.set_rc.outputs.rc_label }}"
 
       - name: Add SSH private key
         run: |
