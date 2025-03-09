@@ -37,10 +37,10 @@ jobs:
         run: |
           cd source-repo/backend
           docker build -t backend-app:latest .
-          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-${{ github.event.client_payload.tag }}
+          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-${{ github.event.client_payload.tag }}
           cd ../frontend
           docker build -t frontend-app:latest .
-          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-${{ github.event.client_payload.tag }}
+          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-${{ github.event.client_payload.tag }}
 
       - name: Push Frontend and Backend Docker Images to ECR
         run: |
