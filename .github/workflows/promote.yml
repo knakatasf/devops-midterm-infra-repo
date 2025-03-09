@@ -1,0 +1,59 @@
+name: Promote Release Candidate
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [promote-release]
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Infra Repo
+        uses: actions/checkout@v3
+
+      - name: Checkout Source Repo at Release Tag
+        uses: actions/checkout@v3
+        with:
+          repository: knakatasf/devops-midterm-source-repo
+          ref: ${{ github.event.client_payload.tag }}
+          token: ${{ secrets.ACCESS_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Login to AWS ECR
+        run: |
+          echo "Logging in to AWS ECR..."
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
+      
+
+      - name: Build Frontend and Backend Docker Image
+        run: |
+          docker build -f devops-midterm-source-repo/frontend/Dockerfile -t myapp-frontend:latest .
+          docker tag myapp-frontend:latest $ECR_URI/myapp-frontend:${{ github.event.client_payload.tag }}
+          docker build -f devops-midterm-source-repo/backend/Dockerfile -t myapp-backend:latest .
+          docker tag myapp-backend:latest $ECR_URI/myapp-backend:${{ github.event.client_payload.tag }}
+
+      - name: Push Frontend and Backend Docker Images to ECR
+        run: |
+          docker push $ECR_URI/myapp-frontend:${{ github.event.client_payload.tag }}
+          docker push $ECR_URI/myapp-backend:${{ github.event.client_payload.tag }}
+
+      - name: Promote Docker Image in ECR
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_REPO_NAME=myapp
+          IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/$ECR_REPO_NAME"
+          docker pull $IMAGE_URI:latest
+          docker tag $IMAGE_URI:latest $IMAGE_URI:${{ env.RELEASE_TAG }}
+          docker push $IMAGE_URI:${{ env.RELEASE_TAG }}
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@my-ec2-instance "docker pull $IMAGE_URI:${{ env.RELEASE_TAG }} && docker stop myapp || true && docker rm myapp || true && docker run -d --name myapp -p 80:8800 $IMAGE_URI:${{ env.RELEASE_TAG }}"

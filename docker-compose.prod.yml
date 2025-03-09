@@ -3,9 +3,6 @@ version: "3"
 services:
   backend:
     container_name: backend
-#    build:
-#      context: ../source-repo/backend
-#      dockerfile: Dockerfile
     image: backend-app:latest
     ports:
       - "8800:8800"
@@ -14,9 +11,6 @@ services:
 
   frontend:
     container_name: frontend
-#    build:
-#      context: ../source-repo/frontend
-#      dockerfile: Dockerfile
     image: frontend-app:latest
     env_file:
       - /home/ec2-user/.env
