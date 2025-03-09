@@ -2,6 +2,11 @@ name: Promote Release Candidate
 
 on:
   workflow_dispatch:
+    inputs:
+      rc_label:
+        description: 'Release Candidate Label (e.g., rc1, rc2)'
+        required: true
+        default: 'rc1'
   repository_dispatch:
     types: [promote-release]
 
@@ -12,13 +17,16 @@ jobs:
       - name: Checkout Infra Repo
         uses: actions/checkout@v3
 
-      - name: Checkout Source Repo at Release Tag
-        uses: actions/checkout@v3
-        with:
-          repository: knakatasf/devops-midterm-source-repo
-          ref: ${{ github.event.client_payload.tag }}
-          token: ${{ secrets.ACCESS_TOKEN }}
-          path: source-repo
+      - name: Set RC Label
+        id: set_rc
+        run: |
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            RC_LABEL="${{ github.event.client_payload.rc_label }}"
+          else
+            RC_LABEL="${{ github.event.inputs.rc_label }}"
+          fi
+          echo "rc_label=$RC_LABEL" >> $GITHUB_OUTPUT
+          echo "Using RC Label: $RC_LABEL"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -30,22 +38,19 @@ jobs:
 
       - name: Login to AWS ECR
         run: |
-          echo "Logging in to AWS ECR..."
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
 
-      - name: Build Frontend and Backend Docker Image
+      - name: Promote Latest Images with RC Label
         run: |
-          cd source-repo/backend
-          docker build -t backend-app:latest .
-          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-${{ github.event.client_payload.tag }}
-          cd ../frontend
-          docker build -t frontend-app:latest .
-          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-${{ github.event.client_payload.tag }}
-
-      - name: Push Frontend and Backend Docker Images to ECR
-        run: |
-          docker push ${{ secrets.AWS_ECR_REPO }}:frontend-${{ github.event.client_payload.tag }}
-          docker push ${{ secrets.AWS_ECR_REPO }}:backend-${{ github.event.client_payload.tag }}
+          # Get the latest image tags
+          LATEST_FRONTEND=$(aws ecr describe-images --repository-name ${{ secrets.AWS_ECR_REPO }} --query 'imageDetails[?contains(imageTags, `latest-frontend`)]|[0].imageDigest' --output text)
+          LATEST_BACKEND=$(aws ecr describe-images --repository-name ${{ secrets.AWS_ECR_REPO }} --query 'imageDetails[?contains(imageTags, `latest-backend`)]|[0].imageDigest' --output text)
+          
+          # Tag these images with the RC label
+          aws ecr put-image --repository-name ${{ secrets.AWS_ECR_REPO }} --image-tag "frontend-${{ steps.set_rc.outputs.rc_label }}" --image-digest $LATEST_FRONTEND
+          aws ecr put-image --repository-name ${{ secrets.AWS_ECR_REPO }} --image-tag "backend-${{ steps.set_rc.outputs.rc_label }}" --image-digest $LATEST_BACKEND
+          
+          echo "Images promoted to ${{ steps.set_rc.outputs.rc_label }}"
 
       - name: Add SSH private key
         run: |
@@ -53,8 +58,37 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/my-key.pem
           chmod 600 ~/.ssh/my-key.pem
 
-      - name: Deploy to EC2
+      - name: Deploy to RC Environment
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ secrets.QA_EC2_IP }} << 'EOF'
-            docker-compose -f docker-compose.promo.yml up -d
+          # Copy the docker-compose file to the server
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem docker-compose.rc.yml ec2-user@${{ secrets.QA_EC2_IP }}:~/docker-compose.rc.yml
+          
+          # Login to ECR, pull images, and deploy
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ secrets.QA_EC2_IP }} << EOF
+            # Login to ECR
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
+          
+            # Pull and deploy the images
+            docker-compose -f docker-compose.rc.yml pull
+            docker-compose -f docker-compose.rc.yml up -d
+          
+            # Update Nginx configuration for subdomain (assuming Nginx is used for the subdomain)
+            sudo tee /etc/nginx/conf.d/myapp-rc.conf > /dev/null << 'NGINX'
+            server {
+                listen 80;
+                server_name myapp-rc.domain.com;
+          
+                location / {
+                    proxy_pass http://localhost:80;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                }
+            }
+            NGINX
+          
+            # Reload Nginx to apply changes
+            sudo systemctl reload nginx
+          
+            # For SSL, you might use certbot (if installed)
+            sudo certbot --nginx -d myapp-rc.domain.com --non-interactive --agree-tos --email your-email@example.com
           EOF
