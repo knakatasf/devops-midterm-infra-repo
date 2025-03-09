@@ -18,6 +18,7 @@ jobs:
           repository: knakatasf/devops-midterm-source-repo
           ref: ${{ github.event.client_payload.tag }}
           token: ${{ secrets.ACCESS_TOKEN }}
+          path: source-repo
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -34,10 +35,12 @@ jobs:
 
       - name: Build Frontend and Backend Docker Image
         run: |
-          docker build -f devops-midterm-source-repo/frontend/Dockerfile -t myapp-frontend:latest .
-          docker tag myapp-frontend:latest ${{ secrets.AWS_ECR_REPO }}:frontend-${{ github.event.client_payload.tag }}
-          docker build -f devops-midterm-source-repo/backend/Dockerfile -t myapp-backend:latest .
-          docker tag myapp-backend:latest ${{ secrets.AWS_ECR_REPO }}:backend-${{ github.event.client_payload.tag }}
+          cd source-repo/backend
+          docker build -t backend-app:latest .
+          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-${{ github.event.client_payload.tag }}
+          cd ../frontend
+          docker build -t frontend-app:latest .
+          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-${{ github.event.client_payload.tag }}
 
       - name: Push Frontend and Backend Docker Images to ECR
         run: |
