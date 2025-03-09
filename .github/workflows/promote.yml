@@ -77,35 +77,31 @@ jobs:
 
       - name: Deploy to RC Environment
         run: |
-          # Copy the docker-compose file to the server
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem docker-compose.rc.yml ec2-user@${{ secrets.QA_EC2_IP }}:~/docker-compose.rc.yml
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ secrets.QA_EC2_IP }} << 'EOF'
+            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            export AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}
+            echo "Logging in to AWS ECR..."
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 793261838120.dkr.ecr.us-east-1.amazonaws.com
           
-          # Login to ECR, pull images, and deploy
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ secrets.QA_EC2_IP }} << EOF
-            # Login to ECR
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
+            export AWS_ECR_REPO=${{ secrets.AWS_ECR_REPO }}
+
+            docker pull $AWS_ECR_REPO:backend-latest
+            docker pull $AWS_ECR_REPO:frontend-latest
           
-            # Pull and deploy the images
-            docker-compose -f docker-compose.rc.yml pull
-            docker-compose -f docker-compose.rc.yml up -d
+            export RDS_HOST=${{ secrets.RDS_HOST }}
+            export RDS_USER=${{ secrets.RDS_USER }}
+            export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
+            export RDS_NAME=${{ secrets.RDS_NAME }}
+            export RDS_PORT=${{ secrets.RDS_PORT }}
+            export FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           
-            # Update Nginx configuration for subdomain (assuming Nginx is used for the subdomain)
-            sudo tee /etc/nginx/conf.d/myapp-rc.conf > /dev/null << 'NGINX'
-            server {
-                listen 80;
-                server_name myapp-rc.domain.com;
-          
-                location / {
-                    proxy_pass http://localhost:80;
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                }
-            }
-            NGINX
-          
-            # Reload Nginx to apply changes
-            sudo systemctl reload nginx
-          
-            # For SSL, you might use certbot (if installed)
-            sudo certbot --nginx -d myapp-rc.domain.com --non-interactive --agree-tos --email your-email@example.com
+            echo "Checking for docker-compose.promo.yml..."
+            if [ ! -f docker-compose.qa.yml ]; then
+              cp /home/ec2-user/infra-repo/docker-compose.promo.yml /home/ec2-user/docker-compose.promo.yml
+            fi
+
+            docker-compose -f docker-compose.promo.yml up -d
+
+            echo "✅ Deployment to QA EC2 successful!"
           EOF

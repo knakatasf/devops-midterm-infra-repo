@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   frontend:
-    image: "${AWS_ECR_REPO}/myapp-frontend:${GITHUB_TAG}"
+    image: ${AWS_ECR_REPO}:frontend-${RC_LABEL}
     container_name: frontend
     depends_on:
       - backend
@@ -12,7 +12,7 @@ services:
       VITE_BOOK_API_BASE_URL: https://claudio.works/api
 
   backend:
-    image: "${AWS_ECR_REPO}/myapp-backend:${GITHUB_TAG}"
+    image: ${AWS_ECR_REPO}:frontend-${RC_LABEL}
     container_name: backend
     ports:
       - "8800:8800"
@@ -22,3 +22,4 @@ services:
       RDS_PASSWORD: ${RDS_PASSWORD}
       RDS_NAME: ${RDS_NAME}
       RDS_PORT: ${RDS_PORT}
+      FRONTEND_URL: ${FRONTEND_URL}
