@@ -2,31 +2,16 @@ name: Promote Release Candidate
 
 on:
   workflow_dispatch:
-    inputs:
-      rc_label:
-        description: 'Release Candidate Label (e.g., rc1, rc2)'
-        required: true
-        default: 'rc1'
   repository_dispatch:
     types: [promote-release]
 
 jobs:
   promote:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Infra Repo
         uses: actions/checkout@v3
-
-      - name: Set RC Label
-        id: set_rc
-        run: |
-          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
-            RC_LABEL="${{ github.event.client_payload.rc_label }}"
-          else
-            RC_LABEL="${{ github.event.inputs.rc_label }}"
-          fi
-          echo "rc_label=$RC_LABEL" >> $GITHUB_OUTPUT
-          echo "Using RC Label: $RC_LABEL"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -38,36 +23,26 @@ jobs:
 
       - name: Login to AWS ECR
         run: |
+          echo "Logging in to AWS ECR..."
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URL }}
 
-      - name: List available ECR repositories
+      - name: Promote Latest Release to RC
         run: |
-          echo "Available ECR repositories:"
-          aws ecr describe-repositories --query 'repositories[*].repositoryName' --output table
+          export AWS_ECR_REPO=${{ secrets.AWS_ECR_REPO }}
+          export RELEASE_TAG=${{ github.event.client_payload.tag }}  # e.g., 1.0.15
+          export RC_LABEL=${{ github.event.client_payload.rc_label }} # e.g., rc1
 
-      - name: Checkout Source Repo at Release Tag
-        uses: actions/checkout@v3
-        with:
-          repository: knakatasf/devops-midterm-source-repo
-          token: ${{ secrets.ACCESS_TOKEN }}
-          path: source-repo
+          # Pull the latest release images
+          docker pull $AWS_ECR_REPO:backend-$RELEASE_TAG
+          docker pull $AWS_ECR_REPO:frontend-$RELEASE_TAG
 
-      - name: Build and push with RC Label
-        run: |
-          # Build and tag images with RC label
-          cd source-repo/backend
-          docker build -t backend-app:latest .
-          docker tag backend-app:latest ${{ secrets.AWS_ECR_REPO }}:backend-${{ steps.set_rc.outputs.rc_label }}
+          # Tag the pulled images as RC
+          docker tag $AWS_ECR_REPO:backend-$RELEASE_TAG $AWS_ECR_REPO:backend-$RC_LABEL
+          docker tag $AWS_ECR_REPO:frontend-$RELEASE_TAG $AWS_ECR_REPO:frontend-$RC_LABEL
 
-          cd ../frontend
-          docker build -t frontend-app:latest .
-          docker tag frontend-app:latest ${{ secrets.AWS_ECR_REPO }}:frontend-${{ steps.set_rc.outputs.rc_label }}
-
-          # Push images to ECR
-          docker push ${{ secrets.AWS_ECR_REPO }}:backend-${{ steps.set_rc.outputs.rc_label }}
-          docker push ${{ secrets.AWS_ECR_REPO }}:frontend-${{ steps.set_rc.outputs.rc_label }}
-
-          echo "Images built and pushed with RC label: ${{ steps.set_rc.outputs.rc_label }}"
+          # Push the newly tagged RC images to ECR
+          docker push $AWS_ECR_REPO:backend-$RC_LABEL
+          docker push $AWS_ECR_REPO:frontend-$RC_LABEL
 
       - name: Add SSH private key
         run: |
@@ -78,31 +53,20 @@ jobs:
       - name: Deploy to RC Environment
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@${{ secrets.QA_EC2_IP }} << 'EOF'
-            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            export AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }}
-            echo "Logging in to AWS ECR..."
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 793261838120.dkr.ecr.us-east-1.amazonaws.com
-          
             export AWS_ECR_REPO=${{ secrets.AWS_ECR_REPO }}
-            export RC_LABEL=${{ steps.set_rc.outputs.rc_label }}
+            export RC_LABEL=${{ github.event.client_payload.rc_label }}
 
             docker pull $AWS_ECR_REPO:backend-$RC_LABEL
             docker pull $AWS_ECR_REPO:frontend-$RC_LABEL
-          
+
             export RDS_HOST=${{ secrets.RDS_HOST }}
             export RDS_USER=${{ secrets.RDS_USER }}
             export RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             export RDS_NAME=${{ secrets.RDS_NAME }}
             export RDS_PORT=${{ secrets.RDS_PORT }}
             export FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-          
-            echo "Checking for docker-compose.promo.yml..."
-            if [ ! -f docker-compose.qa.yml ]; then
-              cp /home/ec2-user/infra-repo/docker-compose.promo.yml /home/ec2-user/docker-compose.promo.yml
-            fi
 
             docker-compose -f docker-compose.promo.yml up -d
 
-            echo "✅ Deployment to QA EC2 successful!"
+            echo "✅ Deployment to RC environment successful!"
           EOF
