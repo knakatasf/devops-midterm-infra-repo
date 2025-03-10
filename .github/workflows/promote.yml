@@ -32,17 +32,14 @@ jobs:
           export RELEASE_TAG=${{ github.event.client_payload.tag }}  # e.g., 1.0.15
           export RC_LABEL=${{ github.event.client_payload.rc_label }} # e.g., rc1
 
-          # Pull the latest release images
-          docker pull $AWS_ECR_REPO:backend-$RELEASE_TAG
-          docker pull $AWS_ECR_REPO:frontend-$RELEASE_TAG
-
-          # Tag the pulled images as RC
-          docker tag $AWS_ECR_REPO:backend-$RELEASE_TAG $AWS_ECR_REPO:backend-$RC_LABEL
-          docker tag $AWS_ECR_REPO:frontend-$RELEASE_TAG $AWS_ECR_REPO:frontend-$RC_LABEL
-
-          # Push the newly tagged RC images to ECR
-          docker push $AWS_ECR_REPO:backend-$RC_LABEL
-          docker push $AWS_ECR_REPO:frontend-$RC_LABEL
+          docker pull $AWS_ECR_REPO:frontend-latest
+          docker pull $AWS_ECR_REPO:backend-latest
+          
+          docker tag $AWS_ECR_REPO:frontend-latest $AWS_ECR_REPO:frontend-${RC_LABEL}
+          docker tag $AWS_ECR_REPO:backend-latest $AWS_ECR_REPO:backend-${RC_LABEL}
+          
+          docker push $AWS_ECR_REPO:frontend-${RC_LABEL}
+          docker push $AWS_ECR_REPO:backend-${RC_LABEL}
 
       - name: Add SSH private key
         run: |
